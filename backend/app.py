@@ -20,7 +20,27 @@ import pandas as pd
 
 load_dotenv()
 
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql+psycopg2://postgres:PhoebeDrugStore01@db.xybuirzvlfuwmtcokkwm.supabase.co:5432/postgres?sslmode=require')
+# Get DATABASE_URL and validate it
+DATABASE_URL = os.getenv('DATABASE_URL')
+if not DATABASE_URL:
+    raise ValueError(
+        "DATABASE_URL environment variable is not set. "
+        "Please set it in Render dashboard: Settings → Environment Variables"
+    )
+
+# Validate DATABASE_URL format
+if 'port' in DATABASE_URL.lower() and ':' not in DATABASE_URL.split('@')[1].split('/')[0]:
+    raise ValueError(
+        f"Invalid DATABASE_URL format. Found placeholder text 'port'. "
+        f"Please check your DATABASE_URL in Render dashboard. "
+        f"Format should be: postgresql+psycopg2://user:password@host:5432/database?sslmode=require"
+    )
+
+# Fallback to default (for local development only)
+if DATABASE_URL == 'postgresql+psycopg2://user:password@host:port/database?sslmode=require':
+    raise ValueError(
+        "DATABASE_URL contains placeholder values. Please set a real DATABASE_URL in Render dashboard."
+    )
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False, expose_headers=["Authorization"], allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"]) 
