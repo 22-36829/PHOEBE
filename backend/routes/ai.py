@@ -31,9 +31,20 @@ logger = logging.getLogger(__name__)
 
 ai_bp = Blueprint('ai', __name__, url_prefix='/api/ai')
 
-# Database connection
+# Database connection - lazy initialization to avoid import-time connection
 DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql+psycopg2://postgres:PhoebeDrugStore01@db.xybuirzvlfuwmtcokkwm.supabase.co:5432/postgres?sslmode=require')
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+_ai_engine = None
+
+def get_ai_engine():
+    """Get database engine, creating it lazily if needed"""
+    global _ai_engine
+    if _ai_engine is None:
+        try:
+            _ai_engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args={"connect_timeout": 10})
+        except Exception as e:
+            logger.error(f"Could not create database engine: {e}")
+            raise
+    return _ai_engine
 
 # Cache for medical information (in production, use Redis)
 medical_cache = {}
@@ -76,7 +87,7 @@ class AIAssistantService:
             WHERE p.is_active = true
             """
             
-            with engine.connect() as conn:
+            with get_ai_engine().connect() as conn:
                 df = pd.read_sql(query, conn)
             
             if df.empty:
@@ -377,7 +388,7 @@ class AIAssistantService:
                 i.current_stock DESC
             """
             
-            with engine.connect() as conn:
+            with get_ai_engine().connect() as conn:
                 result = conn.execute(text(query), {
                     'pharmacy_id': pharmacy_id,
                     'product_name': f'%{product_name}%',

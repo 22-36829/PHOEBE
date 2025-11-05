@@ -68,16 +68,28 @@ def _jwt_expired(jwt_header, jwt_payload):
 def _forbidden(e):
 	return jsonify({'success': False, 'error': 'Forbidden'}), 403
 
-engine: Engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-
-# Initialize forecasting service (lazy - don't connect at startup)
-# This will connect on first use, not at import time
+# Create engine lazily - don't validate connection at import time
+# This allows app to start even if database is temporarily unavailable
 try:
-    forecasting_service = ForecastingService(DATABASE_URL)
+    engine: Engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args={"connect_timeout": 10})
 except Exception as e:
-    print(f"[WARNING] Could not initialize forecasting service at startup: {e}")
-    print("[INFO] Will retry on first use")
-    forecasting_service = None
+    print(f"[WARNING] Could not create database engine: {e}")
+    print("[INFO] Will retry on first database operation")
+    engine = None
+
+# Initialize forecasting service lazily - don't create at import time
+# This prevents import-time database connections
+forecasting_service = None
+
+def get_forecasting_service():
+    """Get forecasting service, creating it lazily if needed"""
+    global forecasting_service
+    if forecasting_service is None:
+        try:
+            forecasting_service = ForecastingService(DATABASE_URL)
+        except Exception as e:
+            print(f"[WARNING] Could not initialize forecasting service: {e}")
+    return forecasting_service
 
 # Ensure inventory adjustment requests table exists
 
@@ -537,6 +549,8 @@ def health():
 	# Initialize database on first request if not already done
 	initialize_database()
 	try:
+		if engine is None:
+			return jsonify({ 'status': 'down', 'error': 'Database engine not initialized' }), 503
 		with engine.connect() as conn:
 			ok = conn.execute(text('select 1')).scalar() == 1
 		return jsonify({ 'status': 'ok' if ok else 'down' })
@@ -5485,11 +5499,15 @@ def get_sales_period_report():
             'date_format': date_format
         })
 
-# AI Assistant Routes
-from routes.ai import ai_bp
-from routes.ai_enhanced import ai_enhanced_bp
-app.register_blueprint(ai_bp)
-app.register_blueprint(ai_enhanced_bp)
+# AI Assistant Routes - Import lazily to avoid startup issues
+try:
+    from routes.ai import ai_bp
+    from routes.ai_enhanced import ai_enhanced_bp
+    app.register_blueprint(ai_bp)
+    app.register_blueprint(ai_enhanced_bp)
+except Exception as e:
+    print(f"[WARNING] Could not import AI routes: {e}")
+    print("[INFO] AI routes will not be available")
 
 def _in_reloader_process() -> bool:
 	"""Return True when running inside the active Flask reloader process."""
