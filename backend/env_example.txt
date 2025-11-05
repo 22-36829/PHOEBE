@@ -1,0 +1,4 @@
+DATABASE_URL=postgresql+psycopg2://postgres:PhoebeDrugStore01@db.xybuirzvlfuwmtcokkwm.supabase.co:5432/postgres?sslmode=require
+FLASK_ENV=development
+APP_SECRET_KEY=change-me
+JWT_SECRET_KEY=change-this-jwt-secret

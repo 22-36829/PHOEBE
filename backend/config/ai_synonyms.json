@@ -1,0 +1,121 @@
+{
+  "category_mappings": {
+    "antibiotics": [
+      "amoxicillin",
+      "ampicillin",
+      "penicillin",
+      "azithromycin",
+      "ciprofloxacin",
+      "cephalexin",
+      "doxycycline",
+      "erythromycin",
+      "clindamycin",
+      "metronidazole",
+      "trimethoprim",
+      "sulfamethoxazole",
+      "cefuroxime",
+      "ceftriaxone",
+      "antibiotic"
+    ],
+    "pain_relief": [
+      "paracetamol",
+      "acetaminophen",
+      "ibuprofen",
+      "aspirin",
+      "naproxen",
+      "diclofenac",
+      "mefenamic",
+      "tramadol",
+      "codeine",
+      "morphine",
+      "biogesic",
+      "tempra",
+      "aspilet",
+      "brufen",
+      "voltaren",
+      "pain",
+      "fever",
+      "headache"
+    ],
+    "vitamins": [
+      "vitamin",
+      "ascorbic",
+      "calcium",
+      "iron",
+      "folic",
+      "ceelin",
+      "growee",
+      "cherifer"
+    ],
+    "antihistamines": [
+      "loratadine",
+      "cetirizine",
+      "fexofenadine",
+      "diphenhydramine",
+      "allergy"
+    ],
+    "antacids": [
+      "omeprazole",
+      "ranitidine",
+      "cimetidine",
+      "antacid",
+      "heartburn"
+    ],
+    "cough_medicine": [
+      "cough",
+      "dextromethorphan",
+      "guaifenesin",
+      "bromhexine",
+      "cold"
+    ],
+    "diabetes": [
+      "metformin",
+      "glipizide",
+      "insulin",
+      "diabetes",
+      "glucose"
+    ],
+    "blood_pressure": [
+      "amlodipine",
+      "lisinopril",
+      "metoprolol",
+      "telmisartan",
+      "catapres",
+      "blood pressure"
+    ],
+    "respiratory": [
+      "salbutamol",
+      "albuterol",
+      "asthma",
+      "breathing",
+      "respiratory"
+    ],
+    "antifungal": [
+      "fluconazole",
+      "clotrimazole",
+      "fungal",
+      "yeast"
+    ],
+    "supplements": [
+      "protein",
+      "omega",
+      "supplement",
+      "nutrition",
+      "milk",
+      "formula"
+    ]
+  },
+  "brand_mappings": {
+    "biogesic": "paracetamol",
+    "tempra": "paracetamol",
+    "aspilet": "aspirin",
+    "brufen": "ibuprofen",
+    "voltaren": "diclofenac",
+    "ceelin": "vitamin_c",
+    "growee": "vitamin",
+    "cherifer": "vitamin",
+    "catapres": "clonidine"
+  },
+  "keyword_overrides": {}
+}
+

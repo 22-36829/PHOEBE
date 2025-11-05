@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8fafc;
+}
+
+/* Dark theme base */
+.dark body {
+  background-color: #020617; /* slate-950 */
+  color: #e2e8f0; /* slate-200 */
+}
+
+/* Global dark-mode overrides for common utilities to affect all pages */
+.dark .bg-white { background-color: #0b1220 !important; } /* slate-950 */
+.dark .bg-gray-50 { background-color: #0f172a !important; } /* slate-900 */
+.dark .bg-gray-100 { background-color: #1e293b !important; } /* slate-800 */
+.dark .text-gray-900 { color: #e5e7eb !important; } /* gray-200 */
+.dark .text-gray-800 { color: #e2e8f0 !important; }
+.dark .text-gray-700 { color: #cbd5e1 !important; }
+.dark .text-gray-600 { color: #94a3b8 !important; }
+.dark .text-gray-500 { color: #64748b !important; }
+.dark .border-gray-200 { border-color: #1f2937 !important; } /* slate-800-ish */
+.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #1f2937 !important; }
+.dark .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0,0,0,0.6) !important; }
+.dark .bg-white\/80 { background-color: rgba(2,6,23,0.8) !important; }
+.dark .bg-white\/90 { background-color: rgba(2,6,23,0.9) !important; }
+
+/* Gradient token fixes often used in headers/banners */
+.dark .from-blue-50 { --tw-gradient-from: #0b1220 var(--tw-gradient-from-position); --tw-gradient-to: rgba(11,18,32,0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+.dark .to-purple-50 { --tw-gradient-to: #111827 var(--tw-gradient-to-position); }
+.dark .from-emerald-50 { --tw-gradient-from: #0b1220 var(--tw-gradient-from-position); }
+.dark .to-lime-50 { --tw-gradient-to: #0b1220 var(--tw-gradient-to-position); }
+
+/* Hover utility overrides commonly used on cards/rows/buttons */
+.dark .hover\:bg-gray-50:hover { background-color: #0f172a !important; }
+.dark .hover\:bg-gray-100:hover { background-color: #1e293b !important; }
+
+/* Form elements (global) */
+.dark input[type="text"],
+.dark input[type="number"],
+.dark input[type="search"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark select,
+.dark textarea {
+  background-color: #0b1220 !important; /* slate-950 */
+  border-color: #334155 !important; /* slate-600 */
+  color: #e2e8f0 !important; /* slate-200 */
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #64748b !important; }
+
+/* Tables */
+.dark table { color: #cbd5e1; }
+.dark thead { background-color: #1e293b !important; color: #cbd5e1 !important; }
+.dark tbody { background-color: #0b1220 !important; }
+.dark tbody tr { border-color: #1f2937 !important; }
+.dark tbody tr:hover { background-color: #0f172a !important; }
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Dark scrollbars */
+.dark ::-webkit-scrollbar-track { background: #0b1220; }
+.dark ::-webkit-scrollbar-thumb { background: #334155; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* Custom components */
+.btn-primary {
+  @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+}
+
+.btn-secondary {
+  @apply bg-secondary-200 hover:bg-secondary-300 text-secondary-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+}
+
+.btn-danger {
+  @apply bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+}
+
+.input-field {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+}
+
+.card {
+  @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+}
+
+.dark .card {
+  @apply bg-slate-950 border-slate-800 text-slate-200;
+}
+
+.sidebar-item {
+  @apply flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 hover:text-primary-600 transition-colors duration-200 cursor-pointer;
+}
+
+.sidebar-item.active {
+  @apply bg-primary-50 text-primary-600 border-r-2 border-primary-600;
+}
+
+.dark .input-field {
+  @apply bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500 focus:ring-primary-500;
+}
+
+.dark .btn-secondary {
+  @apply bg-slate-800 hover:bg-slate-700 text-slate-200;
+}
