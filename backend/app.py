@@ -269,11 +269,32 @@ def ensure_set_updated_at_function() -> None:
 	except Exception as e:
 		print(f"[ensure_set_updated_at_function] Error: {e}")
 
-ensure_set_updated_at_function()
-ensure_inventory_requests_table()
-ensure_products_location_column()
-ensure_pharmacy_deletion_requests_table()
-ensure_inventory_expiration_column()
+# Lazy initialization - only run when app is ready, not at import time
+# This prevents startup crashes if database is temporarily unavailable
+_db_initialized = False
+
+def initialize_database():
+	"""Initialize database tables lazily - only called when app is ready"""
+	global _db_initialized
+	if _db_initialized:
+		return
+	try:
+		ensure_set_updated_at_function()
+		ensure_inventory_requests_table()
+		ensure_products_location_column()
+		ensure_pharmacy_deletion_requests_table()
+		ensure_inventory_expiration_column()
+		ensure_support_tickets_tables()
+		ensure_announcements_table()
+		ensure_subscription_status_enum()
+		ensure_subscription_payment_fields()
+		ensure_subscription_plans_table()
+		ensure_pharmacy_signup_requests_table()
+		_db_initialized = True
+		print("[initialize_database] Database tables initialized successfully")
+	except Exception as e:
+		print(f"[initialize_database] Error: {e}")
+		print("[initialize_database] Will retry on first request")
 
 def ensure_support_tickets_tables() -> None:
 	"""Ensure support tickets and messages tables exist"""
@@ -384,7 +405,7 @@ def ensure_support_tickets_tables() -> None:
 	except Exception as e:
 		print(f"[ensure_support_tickets_tables] Error: {e}")
 
-ensure_support_tickets_tables()
+# Don't call at module level - call in initialize_database() instead
 
 def ensure_announcements_table() -> None:
 	"""Ensure announcements table exists"""
@@ -431,7 +452,7 @@ def ensure_announcements_table() -> None:
 	except Exception as e:
 		print(f"[ensure_announcements_table] Error: {e}")
 
-ensure_announcements_table()
+# Don't call at module level - call in initialize_database() instead
 
 # Utility endpoint to export current DB schema (DDL only)
 @app.get('/api/_internal/schema')
@@ -513,9 +534,14 @@ def seed_demo_accounts() -> None:
 
 @app.get('/api/health')
 def health():
-	with engine.connect() as conn:
-		ok = conn.execute(text('select 1')).scalar() == 1
-	return jsonify({ 'status': 'ok' if ok else 'down' })
+	# Initialize database on first request if not already done
+	initialize_database()
+	try:
+		with engine.connect() as conn:
+			ok = conn.execute(text('select 1')).scalar() == 1
+		return jsonify({ 'status': 'ok' if ok else 'down' })
+	except Exception as e:
+		return jsonify({ 'status': 'down', 'error': str(e) }), 503
 
 @app.get('/api/products')
 def get_products():
@@ -1241,17 +1267,7 @@ def ensure_subscription_payment_fields():
 	except Exception as e:
 		print(f'[ensure_subscription_payment_fields] Error: {e}')
 
-# Ensure subscription status enum on startup
-ensure_subscription_status_enum()
-
-# Ensure subscription payment fields on startup
-ensure_subscription_payment_fields()
-
-# Ensure subscription plans table on startup
-ensure_subscription_plans_table()
-
-# Ensure signup requests table on startup
-ensure_pharmacy_signup_requests_table()
+# Don't call at module level - call in initialize_database() instead
 
 @app.get('/api/admin/subscription-plans')
 @jwt_required()
