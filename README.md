@@ -129,12 +129,12 @@ The system includes sample data in CSV format:
 
 ## 🚀 Deployment
 
-### Production Setup
-1. Configure production database
-2. Set up environment variables
-3. Build frontend: `npm run build`
-4. Deploy backend with WSGI server
-5. Configure reverse proxy (nginx)
+See [DEPLOYMENT_STEPS.md](DEPLOYMENT_STEPS.md) for detailed deployment instructions.
+
+### Quick Deployment
+- **Frontend**: Deploy to Vercel
+- **Backend**: Deploy to Render
+- See `DEPLOYMENT_GUIDE.md` for complete guide
 
 ## 📝 License
 
