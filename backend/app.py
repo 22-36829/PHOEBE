@@ -70,8 +70,14 @@ def _forbidden(e):
 
 engine: Engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
-# Initialize forecasting service
-forecasting_service = ForecastingService(DATABASE_URL)
+# Initialize forecasting service (lazy - don't connect at startup)
+# This will connect on first use, not at import time
+try:
+    forecasting_service = ForecastingService(DATABASE_URL)
+except Exception as e:
+    print(f"[WARNING] Could not initialize forecasting service at startup: {e}")
+    print("[INFO] Will retry on first use")
+    forecasting_service = None
 
 # Ensure inventory adjustment requests table exists
 

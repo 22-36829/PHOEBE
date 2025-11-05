@@ -32,8 +32,10 @@ class ForecastingService:
         self.models_dir = os.path.join('backend', 'ai_models')
         os.makedirs(self.models_dir, exist_ok=True)
 
-        if self.engine:
-            self._ensure_metadata_table()
+        # Don't connect at initialization - connect lazily on first use
+        # This prevents startup failures if database is temporarily unavailable
+        # if self.engine:
+        #     self._ensure_metadata_table()
 
     # ------------------------------------------------------------------
     # Internal helpers
