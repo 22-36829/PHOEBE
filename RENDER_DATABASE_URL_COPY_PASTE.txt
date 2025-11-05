@@ -1,7 +1,3 @@
-# Backend Environment Variables for Production
-# Copy this content and paste into Render's "Add from .env" dialog
-
-# ✅ CORRECT DATABASE_URL (ready to use):
 DATABASE_URL=postgresql+psycopg2://postgres:PhoebeDrugStore01@db.xybuirzvlfuwmtcokkwm.supabase.co:5432/postgres?sslmode=require
 JWT_SECRET_KEY=XHvffY70jteAcebHmGcEwxRhHjFVeSDOGg5pepdGXWU
 APP_SECRET_KEY=ISX79vibLwDGSVZWZqVN_-atmwh3kv4Sq-W1P70HOIQ
