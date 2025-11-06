@@ -12,7 +12,7 @@ sys.stdout.write("[INIT] Starting app initialization...\n")
 sys.stdout.flush()
 
 try:
-    from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request
     sys.stdout.write("[INIT] Flask imported successfully\n")
     sys.stdout.flush()
     app = Flask(__name__)
@@ -53,7 +53,7 @@ sys.stdout.flush()
 try:
     sys.stdout.write("[INIT] Importing CORS...\n")
     sys.stdout.flush()
-    from flask_cors import CORS
+from flask_cors import CORS
     CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False, expose_headers=["Authorization"], allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"])
     sys.stdout.write("[INFO] CORS enabled\n")
     sys.stdout.flush()
@@ -64,9 +64,9 @@ except Exception as e:
 try:
     sys.stdout.write("[INIT] Importing SQLAlchemy...\n")
     sys.stdout.flush()
-    from sqlalchemy import create_engine, text
-    from sqlalchemy import inspect
-    from sqlalchemy.engine import Engine
+from sqlalchemy import create_engine, text
+from sqlalchemy import inspect
+from sqlalchemy.engine import Engine
     SQLALCHEMY_AVAILABLE = True
     sys.stdout.write("[INFO] SQLAlchemy imported successfully\n")
     sys.stdout.flush()
@@ -77,14 +77,14 @@ except Exception as e:
     Engine = None
 
 try:
-    from dotenv import load_dotenv
+from dotenv import load_dotenv
     load_dotenv()
     print("[INFO] Environment variables loaded")
 except Exception as e:
     print(f"[WARNING] Could not load .env: {e}")
 
 try:
-    from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
     JWT_AVAILABLE = True
     print("[INFO] Flask-JWT-Extended imported successfully")
 except Exception as e:
@@ -101,7 +101,7 @@ except Exception as e:
         return None
 
 try:
-    import bcrypt
+import bcrypt
     BCRYPT_AVAILABLE = True
     print("[INFO] bcrypt imported successfully")
 except Exception as e:
@@ -110,21 +110,9 @@ except Exception as e:
     bcrypt = None
 
 # Enable forecasting service with proper initialization - wrap in try-except to prevent import crashes
-try:
-    sys.stdout.write("[INIT] Importing forecasting dependencies...\n")
-    sys.stdout.flush()
-    from forecasting_service import ForecastingService
-    from statsmodels.tsa.statespace.sarimax import SARIMAX
-    from sklearn.metrics import mean_absolute_error, mean_squared_error
-    import numpy as np
-    import pandas as pd
-    FORECASTING_AVAILABLE = True
-    sys.stdout.write("[INFO] Forecasting dependencies imported successfully\n")
-    sys.stdout.flush()
-except Exception as e:
-    sys.stdout.write(f"[WARNING] Could not import forecasting dependencies: {e}\n")
-    sys.stdout.write("[INFO] Forecasting features will be disabled\n")
-    sys.stdout.flush()
+SKIP_AI_ROUTES = os.getenv('SKIP_AI_ROUTES', 'false').lower() in ('true', '1', 'yes')
+if SKIP_AI_ROUTES:
+    # Do not import heavy deps; keep features disabled for fast, low-memory core backend
     FORECASTING_AVAILABLE = False
     ForecastingService = None
     SARIMAX = None
@@ -132,6 +120,31 @@ except Exception as e:
     mean_squared_error = None
     np = None
     pd = None
+    sys.stdout.write("[INFO] Forecasting dependencies skipped (SKIP_AI_ROUTES=true)\n")
+    sys.stdout.flush()
+else:
+    try:
+        sys.stdout.write("[INIT] Importing forecasting dependencies...\n")
+        sys.stdout.flush()
+        from forecasting_service import ForecastingService
+        from statsmodels.tsa.statespace.sarimax import SARIMAX
+        from sklearn.metrics import mean_absolute_error, mean_squared_error
+        import numpy as np
+        import pandas as pd
+        FORECASTING_AVAILABLE = True
+        sys.stdout.write("[INFO] Forecasting dependencies imported successfully\n")
+        sys.stdout.flush()
+    except Exception as e:
+        sys.stdout.write(f"[WARNING] Could not import forecasting dependencies: {e}\n")
+        sys.stdout.write("[INFO] Forecasting features will be disabled\n")
+        sys.stdout.flush()
+        FORECASTING_AVAILABLE = False
+        ForecastingService = None
+        SARIMAX = None
+        mean_absolute_error = None
+        mean_squared_error = None
+        np = None
+        pd = None
 
 # Get DATABASE_URL - don't crash if missing, app will handle it gracefully
 sys.stdout.write("[INIT] Checking DATABASE_URL...\n")
@@ -169,21 +182,21 @@ app.config['DEBUG'] = DEBUG_MODE
 jwt = None
 if JWT_AVAILABLE:
     try:
-        jwt = JWTManager(app)
+jwt = JWTManager(app)
         print("[INFO] JWT initialized successfully")
-        
-        # JSON auth/permission error handlers
-        @jwt.unauthorized_loader
-        def _jwt_unauthorized(err):
-            return jsonify({'success': False, 'error': 'Missing or invalid authorization header'}), 401
 
-        @jwt.invalid_token_loader
-        def _jwt_invalid(err):
-            return jsonify({'success': False, 'error': 'Invalid token'}), 401
+# JSON auth/permission error handlers
+@jwt.unauthorized_loader
+def _jwt_unauthorized(err):
+	return jsonify({'success': False, 'error': 'Missing or invalid authorization header'}), 401
 
-        @jwt.expired_token_loader
-        def _jwt_expired(jwt_header, jwt_payload):
-            return jsonify({'success': False, 'error': 'Token expired'}), 401
+@jwt.invalid_token_loader
+def _jwt_invalid(err):
+	return jsonify({'success': False, 'error': 'Invalid token'}), 401
+
+@jwt.expired_token_loader
+def _jwt_expired(jwt_header, jwt_payload):
+	return jsonify({'success': False, 'error': 'Token expired'}), 401
     except Exception as e:
         print(f"[WARNING] Could not initialize JWT: {e}")
         jwt = None
@@ -220,7 +233,7 @@ def get_forecasting_service():
         return None
     if forecasting_service is None:
         try:
-            forecasting_service = ForecastingService(DATABASE_URL)
+forecasting_service = ForecastingService(DATABASE_URL)
         except Exception as e:
             print(f"[WARNING] Could not initialize forecasting service: {e}")
     return forecasting_service
@@ -228,78 +241,78 @@ def get_forecasting_service():
 # Ensure inventory adjustment requests table exists
 
 def ensure_returns_tables() -> None:
-	"""Ensure returns and return_items tables exist"""
+    """Ensure returns and return_items tables exist"""
 	if engine is None:
 		return
-	try:
-		with engine.begin() as conn:
-			# Create returns table
-			conn.execute(text("""
-				CREATE TABLE IF NOT EXISTS returns (
-					id bigserial primary key,
-					return_number text unique not null,
-					sale_id bigint not null references sales(id) on delete cascade,
-					pharmacy_id bigint not null references pharmacies(id) on delete cascade,
-					user_id bigint references users(id) on delete set null,
-					reason text not null,
-					total_refund_amount numeric(12,2) not null check (total_refund_amount >= 0),
-					status text default 'completed' check (status in ('pending', 'completed', 'cancelled')),
-					notes text,
-					created_at timestamptz default now(),
-					updated_at timestamptz default now()
-				)
-			"""))
-			
-			# Create return_items table
-			conn.execute(text("""
-				CREATE TABLE IF NOT EXISTS return_items (
-					id bigserial primary key,
-					return_id bigint references returns(id) on delete cascade,
-					product_id bigint references products(id),
-					quantity int not null check (quantity > 0),
-					unit_price numeric(12,2) not null check (unit_price >= 0),
-					total_refund numeric(12,2) generated always as (quantity * unit_price) stored,
-					created_at timestamptz default now()
-				)
-			"""))
-			
-			# Create triggers for updated_at
-			conn.execute(text("""
-				DROP TRIGGER IF EXISTS trg_returns_updated ON returns;
-				CREATE TRIGGER trg_returns_updated 
-				BEFORE UPDATE ON returns 
-				FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-			"""))
-			
-	except Exception as e:
-		print(f"Error creating returns tables: {e}")
+    try:
+        with engine.begin() as conn:
+            # Create returns table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS returns (
+                    id bigserial primary key,
+                    return_number text unique not null,
+                    sale_id bigint not null references sales(id) on delete cascade,
+                    pharmacy_id bigint not null references pharmacies(id) on delete cascade,
+                    user_id bigint references users(id) on delete set null,
+                    reason text not null,
+                    total_refund_amount numeric(12,2) not null check (total_refund_amount >= 0),
+                    status text default 'completed' check (status in ('pending', 'completed', 'cancelled')),
+                    notes text,
+                    created_at timestamptz default now(),
+                    updated_at timestamptz default now()
+                )
+            """))
+            
+            # Create return_items table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS return_items (
+                    id bigserial primary key,
+                    return_id bigint references returns(id) on delete cascade,
+                    product_id bigint references products(id),
+                    quantity int not null check (quantity > 0),
+                    unit_price numeric(12,2) not null check (unit_price >= 0),
+                    total_refund numeric(12,2) generated always as (quantity * unit_price) stored,
+                    created_at timestamptz default now()
+                )
+            """))
+            
+            # Create triggers for updated_at
+            conn.execute(text("""
+                DROP TRIGGER IF EXISTS trg_returns_updated ON returns;
+                CREATE TRIGGER trg_returns_updated 
+                BEFORE UPDATE ON returns 
+                FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+            """))
+            
+    except Exception as e:
+        print(f"Error creating returns tables: {e}")
 
 def ensure_pharmacy_signup_requests_table() -> None:
 	if engine is None:
 		return
-	try:
-		with engine.begin() as conn:
-			conn.execute(text("""
-				CREATE TABLE IF NOT EXISTS pharmacy_signup_requests (
-					id bigserial primary key,
-					pharmacy_name text not null,
-					email text not null,
-					owner_name text default '',
-					password_hash text not null,
-					status text not null default 'pending',
-					admin_notes text default '',
-					created_at timestamptz default now(),
-					updated_at timestamptz default now()
-				)
-			"""))
-			conn.execute(text("""
-				DROP TRIGGER IF EXISTS trg_ph_signup_updated ON pharmacy_signup_requests;
-				CREATE TRIGGER trg_ph_signup_updated 
-				BEFORE UPDATE ON pharmacy_signup_requests 
-				FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-			"""))
-	except Exception as e:
-		print(f"[ensure_pharmacy_signup_requests_table] Error: {e}")
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS pharmacy_signup_requests (
+                    id bigserial primary key,
+                    pharmacy_name text not null,
+                    email text not null,
+                    owner_name text default '',
+                    password_hash text not null,
+                    status text not null default 'pending',
+                    admin_notes text default '',
+                    created_at timestamptz default now(),
+                    updated_at timestamptz default now()
+                )
+            """))
+            conn.execute(text("""
+                DROP TRIGGER IF EXISTS trg_ph_signup_updated ON pharmacy_signup_requests;
+                CREATE TRIGGER trg_ph_signup_updated 
+                BEFORE UPDATE ON pharmacy_signup_requests 
+                FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+            """))
+    except Exception as e:
+        print(f"[ensure_pharmacy_signup_requests_table] Error: {e}")
 
 def ensure_inventory_requests_table() -> None:
 	try:
@@ -429,11 +442,11 @@ def initialize_database():
 	if _db_initialized:
 		return
 	try:
-		ensure_set_updated_at_function()
-		ensure_inventory_requests_table()
-		ensure_products_location_column()
-		ensure_pharmacy_deletion_requests_table()
-		ensure_inventory_expiration_column()
+ensure_set_updated_at_function()
+ensure_inventory_requests_table()
+ensure_products_location_column()
+ensure_pharmacy_deletion_requests_table()
+ensure_inventory_expiration_column()
 		ensure_support_tickets_tables()
 		ensure_announcements_table()
 		ensure_subscription_status_enum()
@@ -644,7 +657,6 @@ def export_schema():
         return jsonify({ 'success': True, 'file': 'file_dump/schema.sql', 'bytes': len(ddl) })
     except Exception as e:
         return jsonify({ 'success': False, 'error': str(e) }), 500
-
 # Seed demo accounts on startup when enabled
 def seed_demo_accounts() -> None:
     if os.getenv('SEED_DEMO', 'true').lower() not in ('1','true','yes'):  # toggle with SEED_DEMO=false
@@ -695,8 +707,8 @@ def health():
 				'app': 'running',
 				'timestamp': datetime.now().isoformat()
 			}), 503
-		with engine.connect() as conn:
-			ok = conn.execute(text('select 1')).scalar() == 1
+	with engine.connect() as conn:
+		ok = conn.execute(text('select 1')).scalar() == 1
 		return jsonify({ 
 			'status': 'ok' if ok else 'down', 
 			'app': 'running',
@@ -802,8 +814,8 @@ def login():
 
 	user = {k: row[k] for k in ['id','email','username','role','pharmacy_id']}
 	if JWT_AVAILABLE:
-		token = create_access_token(identity=str(row['id']))
-		return jsonify({'user': user, 'access_token': token})
+	token = create_access_token(identity=str(row['id']))
+	return jsonify({'user': user, 'access_token': token})
 	else:
 		return jsonify({'user': user, 'access_token': None, 'error': 'JWT not available'}), 503
 
@@ -1278,7 +1290,6 @@ def admin_create_user():
 				return jsonify({'success': True, 'user': dict(row)})
 		except Exception as e:
 			return jsonify({'success': False, 'error': str(e)}), 400
-
 @app.patch('/api/admin/users/<int:user_id>/status')
 @jwt_required()
 def admin_update_user_status(user_id):
@@ -1913,7 +1924,6 @@ def admin_update_subscription(subscription_id):
 				return jsonify({'success': True, 'subscription': result})
 		except Exception as e:
 			return jsonify({'success': False, 'error': str(e)}), 400
-
 @app.delete('/api/admin/subscriptions/<int:subscription_id>')
 @jwt_required()
 def admin_delete_subscription(subscription_id):
@@ -2560,7 +2570,6 @@ def _date_range_params():
 	else:
 		from_dt = to_dt - timedelta(days=30)
 	return from_dt, to_dt
-
 @app.get('/api/manager/analytics/overview')
 @jwt_required()
 def analytics_overview():
@@ -3632,7 +3641,6 @@ def sustainability_dashboard():
 				}
 			}
 		})
-
 @app.post('/api/pos/process-return')
 @jwt_required()
 def process_return():
@@ -4232,7 +4240,6 @@ def get_forecasting_models():
     except Exception as e:
         print(f"Error getting models: {e}")
         return jsonify({'success': False, 'error': 'Failed to get models'}), 500
-
 # =========================
 # INVENTORY: SUPPLIERS, POs, BATCHES, DASHBOARD
 # =========================
@@ -4860,8 +4867,6 @@ def create_purchase_order():
                 'tc': float(it.get('unit_cost') or 0) * int(it['quantity'])
             })
         return jsonify({'success': True, 'po_id': po_id, 'po_number': row['po_number']})
-
-
 @app.get('/api/manager/purchase-orders')
 @jwt_required()
 def list_purchase_orders():
@@ -5420,8 +5425,6 @@ def get_sales_detailed_report():
         '''), params).mappings().all()
         
         return jsonify({'success': True, 'data': [dict(row) for row in sales_data]})
-
-
 @app.get('/api/manager/reports/sales-period')
 @jwt_required()
 def get_sales_period_report():
@@ -5583,8 +5586,8 @@ def get_sales_period_report():
 SKIP_AI_ROUTES = os.getenv('SKIP_AI_ROUTES', 'false').lower() in ('true', '1', 'yes')
 if not SKIP_AI_ROUTES:
     try:
-        from routes.ai import ai_bp
-        app.register_blueprint(ai_bp)
+from routes.ai import ai_bp
+app.register_blueprint(ai_bp)
         print("[INFO] AI routes registered successfully")
     except Exception as e:
         print(f"[WARNING] Could not import AI routes: {e}")
@@ -5594,7 +5597,7 @@ if not SKIP_AI_ROUTES:
     
     try:
         from routes.ai_enhanced import ai_enhanced_bp
-        app.register_blueprint(ai_enhanced_bp)
+app.register_blueprint(ai_enhanced_bp)
         print("[INFO] AI enhanced routes registered successfully")
     except Exception as e:
         print(f"[WARNING] Could not import AI enhanced routes: {e}")
@@ -6012,7 +6015,6 @@ def create_announcement():
 		
 		conn.commit()
 		return jsonify({'success': True, 'announcement': dict(result)})
-
 @app.get('/api/announcements')
 @jwt_required()
 def list_announcements():
