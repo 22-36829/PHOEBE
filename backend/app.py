@@ -769,7 +769,7 @@ def login():
 	if not bcrypt.checkpw(password.encode('utf-8'), row['password_hash'].encode('utf-8')):
 		return jsonify({'error': 'Invalid credentials'}), 401
 
-    user = {k: row[k] for k in ['id','email','username','role','pharmacy_id']}
+	user = {k: row[k] for k in ['id','email','username','role','pharmacy_id']}
 	if JWT_AVAILABLE:
 		token = create_access_token(identity=str(row['id']))
 		return jsonify({'user': user, 'access_token': token})
