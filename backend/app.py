@@ -20,27 +20,23 @@ import pandas as pd
 
 load_dotenv()
 
-# Get DATABASE_URL and validate it
+# Get DATABASE_URL - don't crash if missing, app will handle it gracefully
 DATABASE_URL = os.getenv('DATABASE_URL')
 if not DATABASE_URL:
-    raise ValueError(
-        "DATABASE_URL environment variable is not set. "
-        "Please set it in Render dashboard: Settings → Environment Variables"
-    )
-
-# Validate DATABASE_URL format
-if 'port' in DATABASE_URL.lower() and ':' not in DATABASE_URL.split('@')[1].split('/')[0]:
-    raise ValueError(
-        f"Invalid DATABASE_URL format. Found placeholder text 'port'. "
-        f"Please check your DATABASE_URL in Render dashboard. "
-        f"Format should be: postgresql+psycopg2://user:password@host:5432/database?sslmode=require"
-    )
-
-# Fallback to default (for local development only)
-if DATABASE_URL == 'postgresql+psycopg2://user:password@host:port/database?sslmode=require':
-    raise ValueError(
-        "DATABASE_URL contains placeholder values. Please set a real DATABASE_URL in Render dashboard."
-    )
+    print("[WARNING] DATABASE_URL environment variable is not set.")
+    print("[INFO] App will start but database operations will fail.")
+    print("[INFO] Please set DATABASE_URL in Render dashboard: Settings → Environment Variables")
+    DATABASE_URL = None
+elif 'port' in DATABASE_URL.lower() and ':' not in DATABASE_URL.split('@')[1].split('/')[0]:
+    print(f"[WARNING] Invalid DATABASE_URL format. Found placeholder text 'port'.")
+    print("[INFO] App will start but database operations will fail.")
+    print("[INFO] Please check your DATABASE_URL in Render dashboard.")
+    DATABASE_URL = None
+elif DATABASE_URL == 'postgresql+psycopg2://user:password@host:port/database?sslmode=require':
+    print("[WARNING] DATABASE_URL contains placeholder values.")
+    print("[INFO] App will start but database operations will fail.")
+    print("[INFO] Please set a real DATABASE_URL in Render dashboard.")
+    DATABASE_URL = None
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False, expose_headers=["Authorization"], allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"]) 
@@ -70,12 +66,17 @@ def _forbidden(e):
 
 # Create engine lazily - don't validate connection at import time
 # This allows app to start even if database is temporarily unavailable
-try:
-    engine: Engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args={"connect_timeout": 10})
-except Exception as e:
-    print(f"[WARNING] Could not create database engine: {e}")
-    print("[INFO] Will retry on first database operation")
-    engine = None
+engine: Engine = None
+if DATABASE_URL:
+    try:
+        engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args={"connect_timeout": 10})
+        print("[INFO] Database engine created successfully")
+    except Exception as e:
+        print(f"[WARNING] Could not create database engine: {e}")
+        print("[INFO] Will retry on first database operation")
+        engine = None
+else:
+    print("[WARNING] DATABASE_URL not set, engine will not be created")
 
 # Initialize forecasting service lazily - don't create at import time
 # This prevents import-time database connections
@@ -94,9 +95,11 @@ def get_forecasting_service():
 # Ensure inventory adjustment requests table exists
 
 def ensure_returns_tables() -> None:
-    """Ensure returns and return_items tables exist"""
-    try:
-        with engine.begin() as conn:
+	"""Ensure returns and return_items tables exist"""
+	if engine is None:
+		return
+	try:
+		with engine.begin() as conn:
             # Create returns table
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS returns (
@@ -139,8 +142,10 @@ def ensure_returns_tables() -> None:
         print(f"Error creating returns tables: {e}")
 
 def ensure_pharmacy_signup_requests_table() -> None:
-    try:
-        with engine.begin() as conn:
+	if engine is None:
+		return
+	try:
+		with engine.begin() as conn:
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS pharmacy_signup_requests (
                     id bigserial primary key,

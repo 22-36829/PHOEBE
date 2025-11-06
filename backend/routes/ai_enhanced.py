@@ -44,9 +44,20 @@ def _require_service_token():
 
 ai_enhanced_bp = Blueprint('ai_enhanced', __name__, url_prefix='/api/ai/enhanced')
 
-# Database connection
+# Database connection - lazy initialization to avoid import-time connection
 DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql+psycopg2://postgres:PhoebeDrugStore01@db.xybuirzvlfuwmtcokkwm.supabase.co:5432/postgres?sslmode=require')
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+_ai_enhanced_engine = None
+
+def get_ai_enhanced_engine():
+    """Get database engine, creating it lazily if needed"""
+    global _ai_enhanced_engine
+    if _ai_enhanced_engine is None:
+        try:
+            _ai_enhanced_engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args={"connect_timeout": 10})
+        except Exception as e:
+            logger.error(f"Could not create database engine: {e}")
+            raise
+    return _ai_enhanced_engine
 
 @ai_enhanced_bp.route('/build-index', methods=['POST'])
 def build_semantic_index():
