@@ -782,8 +782,6 @@ def register():
 			return jsonify({'success': True, 'pending_approval': True, 'message': 'Signup request submitted. An admin will review and approve your pharmacy.'}), 202
 	except Exception as e:
 		return jsonify({'error': str(e)}), 400
-
-
 @app.post('/api/auth/login')
 def login():
 	if engine is None:
@@ -998,7 +996,7 @@ def process_sale():
 				s.id, s.sale_number, s.subtotal, s.tax_amount, s.discount_amount, 
 				s.total_amount, s.payment_method, s.created_at,
 				u.first_name, u.last_name
-`			FROM sales s
+			FROM sales s
 			JOIN users u ON s.user_id = u.id
 			WHERE s.id = :sale_id
 		''')
@@ -1551,7 +1549,6 @@ def admin_update_subscription_plan(plan_id):
 				return jsonify({'success': True, 'plan': dict(row)})
 		except Exception as e:
 			return jsonify({'success': False, 'error': str(e)}), 400
-
 @app.delete('/api/admin/subscription-plans/<int:plan_id>')
 @jwt_required()
 def admin_delete_subscription_plan(plan_id):
@@ -2350,8 +2347,6 @@ def manager_update_product(product_id: int):
 		if not row:
 			return jsonify({'success': False, 'error': 'Product not found'}), 404
 		return jsonify({'success': True, 'product': dict(row)})
-
-
 @app.delete('/api/manager/products/<int:product_id>')
 @jwt_required()
 def manager_deactivate_product(product_id: int):
@@ -3044,7 +3039,6 @@ def sustainability_expiry_risk():
 			'medium_risk': medium_risk,
 			'low_risk': low_risk
 		})
-
 @app.get('/api/staff/sustainability/expiry-risk')
 @jwt_required()
 def staff_sustainability_expiry_risk():
@@ -3829,7 +3823,6 @@ def get_return_details(sale_id):
     except Exception as e:
         print(f"Error fetching return details: {e}")
         return jsonify({'success': False, 'error': 'Failed to fetch return details'}), 500
-
 @app.get('/api/manager/returned-items')
 @jwt_required()
 def get_returned_items():
@@ -4614,8 +4607,6 @@ def create_batch(product_id):
         
         conn.commit()
         return jsonify({'success': True, 'message': 'Batch created'})
-
-
 @app.patch('/api/manager/batches/<int:batch_id>')
 @jwt_required()
 def update_batch(batch_id):
@@ -5396,8 +5387,6 @@ def get_sales_staff_report():
         '''), params).mappings().all()
         
         return jsonify({'success': True, 'data': [dict(row) for row in sales_data]})
-
-
 @app.get('/api/manager/reports/sales-date')
 @jwt_required()
 def get_sales_date_report():
@@ -6192,7 +6181,6 @@ def list_announcements():
 				'total_pages': (total + per_page - 1) // per_page if per_page > 0 else 0
 			}
 		})
-
 @app.patch('/api/announcements/<int:announcement_id>')
 @jwt_required()
 def update_announcement(announcement_id):
