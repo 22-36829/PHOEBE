@@ -556,13 +556,27 @@ def health():
 	try:
 		initialize_database()
 		if engine is None:
-			return jsonify({ 'status': 'down', 'error': 'Database engine not initialized', 'app': 'running' }), 503
+			return jsonify({ 
+				'status': 'down', 
+				'error': 'Database engine not initialized', 
+				'app': 'running',
+				'timestamp': datetime.now().isoformat()
+			}), 503
 		with engine.connect() as conn:
 			ok = conn.execute(text('select 1')).scalar() == 1
-		return jsonify({ 'status': 'ok' if ok else 'down', 'app': 'running' })
+		return jsonify({ 
+			'status': 'ok' if ok else 'down', 
+			'app': 'running',
+			'timestamp': datetime.now().isoformat()
+		})
 	except Exception as e:
 		# App is running even if database is down
-		return jsonify({ 'status': 'down', 'error': str(e), 'app': 'running' }), 503
+		return jsonify({ 
+			'status': 'down', 
+			'error': str(e), 
+			'app': 'running',
+			'timestamp': datetime.now().isoformat()
+		}), 503
 
 @app.get('/api/products')
 def get_products():
@@ -5507,14 +5521,36 @@ def get_sales_period_report():
         })
 
 # AI Assistant Routes - Import lazily to avoid startup issues
+# Wrap in try-except to ensure app can start even if AI routes fail
 try:
     from routes.ai import ai_bp
-    from routes.ai_enhanced import ai_enhanced_bp
     app.register_blueprint(ai_bp)
-    app.register_blueprint(ai_enhanced_bp)
+    print("[INFO] AI routes registered successfully")
 except Exception as e:
     print(f"[WARNING] Could not import AI routes: {e}")
     print("[INFO] AI routes will not be available")
+    import traceback
+    traceback.print_exc()
+
+try:
+    from routes.ai_enhanced import ai_enhanced_bp
+    app.register_blueprint(ai_enhanced_bp)
+    print("[INFO] AI enhanced routes registered successfully")
+except Exception as e:
+    print(f"[WARNING] Could not import AI enhanced routes: {e}")
+    print("[INFO] AI enhanced routes will not be available")
+    import traceback
+    traceback.print_exc()
+
+# Add a simple root endpoint to verify app is running
+@app.get('/')
+def root():
+    """Root endpoint to verify app is running"""
+    return jsonify({
+        'status': 'running',
+        'message': 'Phoebe Backend API is running',
+        'version': '1.0.0'
+    })
 
 def _in_reloader_process() -> bool:
 	"""Return True when running inside the active Flask reloader process."""
