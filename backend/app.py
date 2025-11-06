@@ -100,73 +100,73 @@ def ensure_returns_tables() -> None:
 		return
 	try:
 		with engine.begin() as conn:
-            # Create returns table
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS returns (
-                    id bigserial primary key,
-                    return_number text unique not null,
-                    sale_id bigint not null references sales(id) on delete cascade,
-                    pharmacy_id bigint not null references pharmacies(id) on delete cascade,
-                    user_id bigint references users(id) on delete set null,
-                    reason text not null,
-                    total_refund_amount numeric(12,2) not null check (total_refund_amount >= 0),
-                    status text default 'completed' check (status in ('pending', 'completed', 'cancelled')),
-                    notes text,
-                    created_at timestamptz default now(),
-                    updated_at timestamptz default now()
-                )
-            """))
-            
-            # Create return_items table
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS return_items (
-                    id bigserial primary key,
-                    return_id bigint references returns(id) on delete cascade,
-                    product_id bigint references products(id),
-                    quantity int not null check (quantity > 0),
-                    unit_price numeric(12,2) not null check (unit_price >= 0),
-                    total_refund numeric(12,2) generated always as (quantity * unit_price) stored,
-                    created_at timestamptz default now()
-                )
-            """))
-            
-            # Create triggers for updated_at
-            conn.execute(text("""
-                DROP TRIGGER IF EXISTS trg_returns_updated ON returns;
-                CREATE TRIGGER trg_returns_updated 
-                BEFORE UPDATE ON returns 
-                FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-            """))
-            
-    except Exception as e:
-        print(f"Error creating returns tables: {e}")
+			# Create returns table
+			conn.execute(text("""
+				CREATE TABLE IF NOT EXISTS returns (
+					id bigserial primary key,
+					return_number text unique not null,
+					sale_id bigint not null references sales(id) on delete cascade,
+					pharmacy_id bigint not null references pharmacies(id) on delete cascade,
+					user_id bigint references users(id) on delete set null,
+					reason text not null,
+					total_refund_amount numeric(12,2) not null check (total_refund_amount >= 0),
+					status text default 'completed' check (status in ('pending', 'completed', 'cancelled')),
+					notes text,
+					created_at timestamptz default now(),
+					updated_at timestamptz default now()
+				)
+			"""))
+			
+			# Create return_items table
+			conn.execute(text("""
+				CREATE TABLE IF NOT EXISTS return_items (
+					id bigserial primary key,
+					return_id bigint references returns(id) on delete cascade,
+					product_id bigint references products(id),
+					quantity int not null check (quantity > 0),
+					unit_price numeric(12,2) not null check (unit_price >= 0),
+					total_refund numeric(12,2) generated always as (quantity * unit_price) stored,
+					created_at timestamptz default now()
+				)
+			"""))
+			
+			# Create triggers for updated_at
+			conn.execute(text("""
+				DROP TRIGGER IF EXISTS trg_returns_updated ON returns;
+				CREATE TRIGGER trg_returns_updated 
+				BEFORE UPDATE ON returns 
+				FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+			"""))
+			
+	except Exception as e:
+		print(f"Error creating returns tables: {e}")
 
 def ensure_pharmacy_signup_requests_table() -> None:
 	if engine is None:
 		return
 	try:
 		with engine.begin() as conn:
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS pharmacy_signup_requests (
-                    id bigserial primary key,
-                    pharmacy_name text not null,
-                    email text not null,
-                    owner_name text default '',
-                    password_hash text not null,
-                    status text not null default 'pending',
-                    admin_notes text default '',
-                    created_at timestamptz default now(),
-                    updated_at timestamptz default now()
-                )
-            """))
-            conn.execute(text("""
-                DROP TRIGGER IF EXISTS trg_ph_signup_updated ON pharmacy_signup_requests;
-                CREATE TRIGGER trg_ph_signup_updated 
-                BEFORE UPDATE ON pharmacy_signup_requests 
-                FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-            """))
-    except Exception as e:
-        print(f"[ensure_pharmacy_signup_requests_table] Error: {e}")
+			conn.execute(text("""
+				CREATE TABLE IF NOT EXISTS pharmacy_signup_requests (
+					id bigserial primary key,
+					pharmacy_name text not null,
+					email text not null,
+					owner_name text default '',
+					password_hash text not null,
+					status text not null default 'pending',
+					admin_notes text default '',
+					created_at timestamptz default now(),
+					updated_at timestamptz default now()
+				)
+			"""))
+			conn.execute(text("""
+				DROP TRIGGER IF EXISTS trg_ph_signup_updated ON pharmacy_signup_requests;
+				CREATE TRIGGER trg_ph_signup_updated 
+				BEFORE UPDATE ON pharmacy_signup_requests 
+				FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+			"""))
+	except Exception as e:
+		print(f"[ensure_pharmacy_signup_requests_table] Error: {e}")
 
 def ensure_inventory_requests_table() -> None:
 	try:
