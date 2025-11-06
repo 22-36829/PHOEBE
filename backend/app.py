@@ -56,8 +56,13 @@ except Exception as e:
     JWT_AVAILABLE = False
     JWTManager = None
     create_access_token = None
-    jwt_required = None
-    get_jwt_identity = None
+    # Create no-op decorators so routes don't fail
+    def jwt_required(*args, **kwargs):
+        def decorator(f):
+            return f
+        return decorator
+    def get_jwt_identity():
+        return None
 
 try:
     import bcrypt
@@ -764,9 +769,12 @@ def login():
 	if not bcrypt.checkpw(password.encode('utf-8'), row['password_hash'].encode('utf-8')):
 		return jsonify({'error': 'Invalid credentials'}), 401
 
-	user = {k: row[k] for k in ['id','email','username','role','pharmacy_id']}
-	token = create_access_token(identity=str(row['id']))
-	return jsonify({'user': user, 'access_token': token})
+    user = {k: row[k] for k in ['id','email','username','role','pharmacy_id']}
+	if JWT_AVAILABLE:
+		token = create_access_token(identity=str(row['id']))
+		return jsonify({'user': user, 'access_token': token})
+	else:
+		return jsonify({'user': user, 'access_token': None, 'error': 'JWT not available'}), 503
 
 
 @app.get('/api/auth/me')
