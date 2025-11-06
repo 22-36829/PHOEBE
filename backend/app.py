@@ -5615,27 +5615,31 @@ def get_sales_period_report():
             'date_format': date_format
         })
 
-# AI Assistant Routes - Import lazily to avoid startup issues
-# Wrap in try-except to ensure app can start even if AI routes fail
-try:
-    from routes.ai import ai_bp
-    app.register_blueprint(ai_bp)
-    print("[INFO] AI routes registered successfully")
-except Exception as e:
-    print(f"[WARNING] Could not import AI routes: {e}")
-    print("[INFO] AI routes will not be available")
-    import traceback
-    traceback.print_exc()
-
-try:
-    from routes.ai_enhanced import ai_enhanced_bp
-    app.register_blueprint(ai_enhanced_bp)
-    print("[INFO] AI enhanced routes registered successfully")
-except Exception as e:
-    print(f"[WARNING] Could not import AI enhanced routes: {e}")
-    print("[INFO] AI enhanced routes will not be available")
-    import traceback
-    traceback.print_exc()
+# AI Assistant Routes - Import lazily to avoid startup issues and memory consumption
+# Skip AI routes on free tier to save memory (512MB limit)
+SKIP_AI_ROUTES = os.getenv('SKIP_AI_ROUTES', 'false').lower() in ('true', '1', 'yes')
+if not SKIP_AI_ROUTES:
+    try:
+        from routes.ai import ai_bp
+        app.register_blueprint(ai_bp)
+        print("[INFO] AI routes registered successfully")
+    except Exception as e:
+        print(f"[WARNING] Could not import AI routes: {e}")
+        print("[INFO] AI routes will not be available")
+        import traceback
+        traceback.print_exc()
+    
+    try:
+        from routes.ai_enhanced import ai_enhanced_bp
+        app.register_blueprint(ai_enhanced_bp)
+        print("[INFO] AI enhanced routes registered successfully")
+    except Exception as e:
+        print(f"[WARNING] Could not import AI enhanced routes: {e}")
+        print("[INFO] AI enhanced routes will not be available")
+        import traceback
+        traceback.print_exc()
+else:
+    print("[INFO] AI routes skipped (SKIP_AI_ROUTES=true) to save memory")
 
 # Root endpoint already defined at top of file
 
