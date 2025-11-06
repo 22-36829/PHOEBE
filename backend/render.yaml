@@ -7,19 +7,24 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120 --access-logfile - --error-logfile - --log-level info
     envVars:
+      # These values are set automatically
       - key: PYTHON_VERSION
         value: "3.11.0"
-      - key: DATABASE_URL
-        sync: false
-      - key: JWT_SECRET_KEY
-        sync: false
-      - key: APP_SECRET_KEY
-        sync: false
       - key: FLASK_ENV
         value: production
       - key: FLASK_DEBUG
         value: "0"
       - key: SKIP_AI_ROUTES
         value: "true"
+      # These variables are created but you must set their VALUES in Render dashboard
+      - key: DATABASE_URL
+        sync: false
+        # VALUE: postgresql+psycopg2://postgres.xybuirzvlfuwmtcokkwm:PhoebeDrugStore01@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require
+      - key: JWT_SECRET_KEY
+        sync: false
+        # VALUE: XHvffY70jteAcebHmGcEwxRhHjFVeSDOGg5pepdGXWU
+      - key: APP_SECRET_KEY
+        sync: false
+        # VALUE: ISX79vibLwDGSVZWZqVN_-atmwh3kv4Sq-W1P70HOIQ
     healthCheckPath: /api/health
 
