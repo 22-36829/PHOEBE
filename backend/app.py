@@ -684,6 +684,8 @@ def health():
 
 @app.get('/api/products')
 def get_products():
+	if engine is None:
+		return jsonify({'error': 'Database not available'}), 503
 	query = text('''
 		select p.id, p.name, pc.name as category, p.unit_price, p.cost_price,
 		       coalesce(i.current_stock,0) as current_stock,
@@ -755,6 +757,8 @@ def register():
 
 @app.post('/api/auth/login')
 def login():
+	if engine is None:
+		return jsonify({'error': 'Database not available'}), 503
 	data = request.get_json(force=True) or {}
 	email = data.get('email')
 	password = data.get('password')
@@ -861,6 +865,8 @@ def get_pos_categories():
 @jwt_required()
 def process_sale():
 	"""Process a complete sale transaction"""
+	if engine is None:
+		return jsonify({'success': False, 'error': 'Database not available'}), 503
 	try:
 		data = request.get_json()
 		user_id = get_jwt_identity()
@@ -978,19 +984,12 @@ def process_sale():
 			ORDER BY si.id
 		''')
 		
+		if engine is None:
+			return jsonify({'success': False, 'error': 'Database not available'}), 503
+		
 		with engine.connect() as conn:
 			sale_data = conn.execute(receipt_query, {'sale_id': sale_id}).mappings().first()
 			sale_items = [dict(r) for r in conn.execute(items_query, {'sale_id': sale_id}).mappings().all()]
-		
-		for entry in waste_items:
-			entry['waste_value'] = float(entry.get('waste_value') or 0.0)
-			entry['quantity_change'] = int(entry.get('quantity_change') or 0)
-			entry['cost_price'] = float(entry.get('cost_price') or 0.0)
-			entry['unit_price'] = float(entry.get('unit_price') or 0.0)
-			entry['created_at'] = entry['created_at'].isoformat() if entry.get('created_at') else None
-			entry['decided_at'] = entry['decided_at'].isoformat() if entry.get('decided_at') else None
-			entry['reason'] = entry.get('reason') or ''
-			entry['trans_type'] = (entry.get('trans_type') or '').lower()
 		
 		return jsonify({
 			'success': True,
