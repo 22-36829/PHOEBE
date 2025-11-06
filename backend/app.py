@@ -6326,18 +6326,27 @@ def analytics_abc_ved():
 
 # Print startup message when module is imported (for debugging)
 # This MUST run to verify the app can import successfully
-print("[INFO] ========================================")
-print("[INFO] Phoebe Backend app module loaded")
-print(f"[INFO] Flask app object: {app}")
-print(f"[INFO] DATABASE_URL set: {DATABASE_URL is not None}")
-print(f"[INFO] Engine created: {engine is not None}")
-print(f"[INFO] Forecasting available: {FORECASTING_AVAILABLE}")
-print(f"[INFO] SQLAlchemy available: {SQLALCHEMY_AVAILABLE}")
-print(f"[INFO] JWT available: {JWT_AVAILABLE}")
-print("[INFO] ========================================")
-print("[INFO] App should be ready to bind to port")
-print("[INFO] Minimal root endpoint available at /")
-print("[INFO] Health check available at /api/health")
+# Wrap in try-except to ensure we always see SOME output
+try:
+    print("[INFO] ========================================")
+    print("[INFO] Phoebe Backend app module loaded")
+    print(f"[INFO] Flask app object: {app}")
+    print(f"[INFO] DATABASE_URL set: {DATABASE_URL is not None}")
+    print(f"[INFO] Engine created: {engine is not None}")
+    print(f"[INFO] Forecasting available: {FORECASTING_AVAILABLE}")
+    print(f"[INFO] SQLAlchemy available: {SQLALCHEMY_AVAILABLE}")
+    print(f"[INFO] JWT available: {JWT_AVAILABLE}")
+    print("[INFO] ========================================")
+    print("[INFO] App should be ready to bind to port")
+    print("[INFO] Minimal root endpoint available at /")
+    print("[INFO] Health check available at /api/health")
+    import sys
+    sys.stdout.flush()  # Force output to be visible
+except Exception as e:
+    print(f"[CRITICAL] Error during startup logging: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.stdout.flush()
 
 if __name__ == '__main__':
 	if not DEBUG_MODE or _in_reloader_process():
