@@ -12,7 +12,7 @@ sys.stdout.write("[INIT] Starting app initialization...\n")
 sys.stdout.flush()
 
 try:
-from flask import Flask, jsonify, request
+    from flask import Flask, jsonify, request
     sys.stdout.write("[INIT] Flask imported successfully\n")
     sys.stdout.flush()
     app = Flask(__name__)
@@ -53,7 +53,7 @@ sys.stdout.flush()
 try:
     sys.stdout.write("[INIT] Importing CORS...\n")
     sys.stdout.flush()
-from flask_cors import CORS
+    from flask_cors import CORS
     CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False, expose_headers=["Authorization"], allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"])
     sys.stdout.write("[INFO] CORS enabled\n")
     sys.stdout.flush()
@@ -64,9 +64,9 @@ except Exception as e:
 try:
     sys.stdout.write("[INIT] Importing SQLAlchemy...\n")
     sys.stdout.flush()
-from sqlalchemy import create_engine, text
-from sqlalchemy import inspect
-from sqlalchemy.engine import Engine
+    from sqlalchemy import create_engine, text
+    from sqlalchemy import inspect
+    from sqlalchemy.engine import Engine
     SQLALCHEMY_AVAILABLE = True
     sys.stdout.write("[INFO] SQLAlchemy imported successfully\n")
     sys.stdout.flush()
@@ -77,14 +77,14 @@ except Exception as e:
     Engine = None
 
 try:
-from dotenv import load_dotenv
+    from dotenv import load_dotenv
     load_dotenv()
     print("[INFO] Environment variables loaded")
 except Exception as e:
     print(f"[WARNING] Could not load .env: {e}")
 
 try:
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+    from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
     JWT_AVAILABLE = True
     print("[INFO] Flask-JWT-Extended imported successfully")
 except Exception as e:
@@ -101,7 +101,7 @@ except Exception as e:
         return None
 
 try:
-import bcrypt
+    import bcrypt
     BCRYPT_AVAILABLE = True
     print("[INFO] bcrypt imported successfully")
 except Exception as e:
@@ -182,21 +182,21 @@ app.config['DEBUG'] = DEBUG_MODE
 jwt = None
 if JWT_AVAILABLE:
     try:
-jwt = JWTManager(app)
+        jwt = JWTManager(app)
         print("[INFO] JWT initialized successfully")
 
-# JSON auth/permission error handlers
-@jwt.unauthorized_loader
-def _jwt_unauthorized(err):
-	return jsonify({'success': False, 'error': 'Missing or invalid authorization header'}), 401
+        # JSON auth/permission error handlers
+        @jwt.unauthorized_loader
+        def _jwt_unauthorized(err):
+            return jsonify({'success': False, 'error': 'Missing or invalid authorization header'}), 401
 
-@jwt.invalid_token_loader
-def _jwt_invalid(err):
-	return jsonify({'success': False, 'error': 'Invalid token'}), 401
+        @jwt.invalid_token_loader
+        def _jwt_invalid(err):
+            return jsonify({'success': False, 'error': 'Invalid token'}), 401
 
-@jwt.expired_token_loader
-def _jwt_expired(jwt_header, jwt_payload):
-	return jsonify({'success': False, 'error': 'Token expired'}), 401
+        @jwt.expired_token_loader
+        def _jwt_expired(jwt_header, jwt_payload):
+            return jsonify({'success': False, 'error': 'Token expired'}), 401
     except Exception as e:
         print(f"[WARNING] Could not initialize JWT: {e}")
         jwt = None
