@@ -11,12 +11,24 @@ from sqlalchemy.engine import Engine
 from dotenv import load_dotenv
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import bcrypt
-# Enable forecasting service with proper initialization
-from forecasting_service import ForecastingService
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-import numpy as np
-import pandas as pd
+# Enable forecasting service with proper initialization - wrap in try-except to prevent import crashes
+try:
+    from forecasting_service import ForecastingService
+    from statsmodels.tsa.statespace.sarimax import SARIMAX
+    from sklearn.metrics import mean_absolute_error, mean_squared_error
+    import numpy as np
+    import pandas as pd
+    FORECASTING_AVAILABLE = True
+except Exception as e:
+    print(f"[WARNING] Could not import forecasting dependencies: {e}")
+    print("[INFO] Forecasting features will be disabled")
+    FORECASTING_AVAILABLE = False
+    ForecastingService = None
+    SARIMAX = None
+    mean_absolute_error = None
+    mean_squared_error = None
+    np = None
+    pd = None
 
 load_dotenv()
 
@@ -85,6 +97,8 @@ forecasting_service = None
 def get_forecasting_service():
     """Get forecasting service, creating it lazily if needed"""
     global forecasting_service
+    if not FORECASTING_AVAILABLE:
+        return None
     if forecasting_service is None:
         try:
             forecasting_service = ForecastingService(DATABASE_URL)
