@@ -614,7 +614,6 @@ def ensure_announcements_table() -> None:
 			"""))
 	except Exception as e:
 		print(f"[ensure_announcements_table] Error: {e}")
-
 # Don't call at module level - call in initialize_database() instead
 
 # Utility endpoint to export current DB schema (DDL only)
@@ -697,31 +696,41 @@ def seed_demo_accounts() -> None:
 @app.get('/api/health')
 def health():
 	"""Health check endpoint - app is running if this responds"""
+	# Serve cached health for a short TTL to avoid cold hits doing DB every time
+	cached = _cache_get('health')
+	if cached is not None:
+		return cached
 	# Initialize database on first request if not already done
 	try:
 		initialize_database()
 		if engine is None:
-			return jsonify({ 
+			resp = jsonify({ 
 				'status': 'down', 
 				'error': 'Database engine not initialized', 
 				'app': 'running',
 				'timestamp': datetime.now().isoformat()
 			}), 503
-	with engine.connect() as conn:
-		ok = conn.execute(text('select 1')).scalar() == 1
-		return jsonify({ 
+			_cache_set('health', resp, ttl_seconds=30)
+			return resp
+		with engine.connect() as conn:
+			ok = conn.execute(text('select 1')).scalar() == 1
+		resp = jsonify({ 
 			'status': 'ok' if ok else 'down', 
 			'app': 'running',
 			'timestamp': datetime.now().isoformat()
 		})
+		_cache_set('health', resp, ttl_seconds=30)
+		return resp
 	except Exception as e:
 		# App is running even if database is down
-		return jsonify({ 
+		resp = jsonify({ 
 			'status': 'down', 
 			'error': str(e), 
 			'app': 'running',
 			'timestamp': datetime.now().isoformat()
 		}), 503
+		_cache_set('health', resp, ttl_seconds=30)
+		return resp
 
 @app.get('/api/products')
 def get_products():
@@ -1242,7 +1251,6 @@ def admin_create_pharmacy():
 				return jsonify({'success': True, 'pharmacy': dict(row)})
 		except Exception as e:
 			return jsonify({'success': False, 'error': str(e)}), 400
-
 @app.post('/api/admin/users')
 @jwt_required()
 def admin_create_user():
@@ -1834,7 +1842,6 @@ def admin_create_subscription():
 				return jsonify({'success': True, 'subscription': result})
 		except Exception as e:
 			return jsonify({'success': False, 'error': str(e)}), 400
-
 @app.patch('/api/admin/subscriptions/<int:subscription_id>')
 @jwt_required()
 def admin_update_subscription(subscription_id):
@@ -2477,7 +2484,6 @@ def update_manager_profile():
 			returning id, email, username, first_name, last_name, role, pharmacy_id
 		'''), {'fn': first_name, 'ln': last_name, 'uid': user_id}).mappings().first()
 		return jsonify({'success': True, 'user': dict(row)})
-
 @app.get('/api/manager/pharmacy')
 @jwt_required()
 def get_manager_pharmacy():
@@ -4243,7 +4249,6 @@ def get_forecasting_models():
 # =========================
 # INVENTORY: SUPPLIERS, POs, BATCHES, DASHBOARD
 # =========================
-
 def _ensure_suppliers_and_po_tables(conn) -> None:
     """Ensure suppliers and purchase order tables exist (normalized)"""
     # Create suppliers table (matches schema.sql)
@@ -4887,8 +4892,6 @@ def list_purchase_orders():
             limit 200
         '''), {'ph': me['pharmacy_id']}).mappings().all()
         return jsonify({'success': True, 'purchase_orders': [dict(r) for r in rows]})
-
-
 @app.patch('/api/manager/purchase-orders/<int:po_id>')
 @jwt_required()
 def update_purchase_order(po_id: int):
