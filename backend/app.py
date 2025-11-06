@@ -7,8 +7,23 @@ from collections import defaultdict
 
 # CRITICAL: Create Flask app FIRST, before any other imports that might fail
 # This ensures app object exists even if other components fail
-from flask import Flask, jsonify, request
-app = Flask(__name__)
+import sys
+sys.stdout.write("[INIT] Starting app initialization...\n")
+sys.stdout.flush()
+
+try:
+    from flask import Flask, jsonify, request
+    sys.stdout.write("[INIT] Flask imported successfully\n")
+    sys.stdout.flush()
+    app = Flask(__name__)
+    sys.stdout.write("[INIT] Flask app object created\n")
+    sys.stdout.flush()
+except Exception as e:
+    sys.stdout.write(f"[CRITICAL] Failed to create Flask app: {e}\n")
+    import traceback
+    traceback.print_exc()
+    sys.stdout.flush()
+    raise
 
 # Add a minimal root endpoint immediately to ensure app can respond
 @app.get('/')
