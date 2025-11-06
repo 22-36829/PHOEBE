@@ -98,7 +98,7 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 if not DATABASE_URL:
     print("[WARNING] DATABASE_URL environment variable is not set.")
     print("[INFO] App will start but database operations will fail.")
-    print("[INFO] Please set DATABASE_URL in Render dashboard: Settings → Environment Variables")
+    print("[INFO] Please set DATABASE_URL in Render dashboard: Settings > Environment Variables")
     DATABASE_URL = None
 elif 'port' in DATABASE_URL.lower() and ':' not in DATABASE_URL.split('@')[1].split('/')[0]:
     print(f"[WARNING] Invalid DATABASE_URL format. Found placeholder text 'port'.")
@@ -144,24 +144,6 @@ if JWT_AVAILABLE:
 @app.errorhandler(403)
 def _forbidden(e):
 	return jsonify({'success': False, 'error': 'Forbidden'}), 403
-
-# Get DATABASE_URL - don't crash if missing, app will handle it gracefully
-DATABASE_URL = os.getenv('DATABASE_URL')
-if not DATABASE_URL:
-    print("[WARNING] DATABASE_URL environment variable is not set.")
-    print("[INFO] App will start but database operations will fail.")
-    print("[INFO] Please set DATABASE_URL in Render dashboard: Settings → Environment Variables")
-    DATABASE_URL = None
-elif 'port' in DATABASE_URL.lower() and ':' not in DATABASE_URL.split('@')[1].split('/')[0]:
-    print(f"[WARNING] Invalid DATABASE_URL format. Found placeholder text 'port'.")
-    print("[INFO] App will start but database operations will fail.")
-    print("[INFO] Please check your DATABASE_URL in Render dashboard.")
-    DATABASE_URL = None
-elif DATABASE_URL == 'postgresql+psycopg2://user:password@host:port/database?sslmode=require':
-    print("[WARNING] DATABASE_URL contains placeholder values.")
-    print("[INFO] App will start but database operations will fail.")
-    print("[INFO] Please set a real DATABASE_URL in Render dashboard.")
-    DATABASE_URL = None
 
 # Create engine lazily - don't validate connection at import time
 # This allows app to start even if database is temporarily unavailable
