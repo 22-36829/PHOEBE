@@ -551,16 +551,18 @@ def seed_demo_accounts() -> None:
 
 @app.get('/api/health')
 def health():
+	"""Health check endpoint - app is running if this responds"""
 	# Initialize database on first request if not already done
-	initialize_database()
 	try:
+		initialize_database()
 		if engine is None:
-			return jsonify({ 'status': 'down', 'error': 'Database engine not initialized' }), 503
+			return jsonify({ 'status': 'down', 'error': 'Database engine not initialized', 'app': 'running' }), 503
 		with engine.connect() as conn:
 			ok = conn.execute(text('select 1')).scalar() == 1
-		return jsonify({ 'status': 'ok' if ok else 'down' })
+		return jsonify({ 'status': 'ok' if ok else 'down', 'app': 'running' })
 	except Exception as e:
-		return jsonify({ 'status': 'down', 'error': str(e) }), 503
+		# App is running even if database is down
+		return jsonify({ 'status': 'down', 'error': str(e), 'app': 'running' }), 503
 
 @app.get('/api/products')
 def get_products():
