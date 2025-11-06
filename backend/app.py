@@ -6233,6 +6233,14 @@ def analytics_abc_ved():
 	})
 
 
+# Print startup message when module is imported (for debugging)
+print("[INFO] ========================================")
+print("[INFO] Phoebe Backend app module loaded")
+print(f"[INFO] Flask app object: {app}")
+print(f"[INFO] DATABASE_URL set: {DATABASE_URL is not None}")
+print(f"[INFO] Engine created: {engine is not None}")
+print("[INFO] ========================================")
+
 if __name__ == '__main__':
 	if not DEBUG_MODE or _in_reloader_process():
 		ensure_returns_tables()
