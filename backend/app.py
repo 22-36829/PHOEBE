@@ -4038,14 +4038,14 @@ def get_historical_series():
                 existing = {r['sale_date']: r for r in rows}
                 data = []
                 cur = start_date
-                from datetime import timedelta, datetime as _td
+                from datetime import timedelta
                 while cur <= end_date:
                     rec = existing.get(cur)
                     qty = int(rec['quantity']) if rec else 0
                     revenue = float(rec['revenue']) if rec and rec.get('revenue') is not None else 0.0
                     cost = float(rec['cost']) if rec and rec.get('cost') is not None else 0.0
                     data.append({'date': cur.isoformat(), 'quantity': qty, 'revenue': revenue, 'cost': cost})
-                    cur += _td(days=1)
+                    cur += timedelta(days=1)
 
             return jsonify({'success': True, 'data': data, 'from': start_date.isoformat(), 'to': end_date.isoformat()})
     except Exception as e:
@@ -4535,79 +4535,6 @@ def staff_list_batches(product_id: int):
 
 
 @app.post('/api/manager/batches/<int:product_id>')
-@jwt_required()
-def create_batch(product_id):
-    """Create a new batch (delivery) for a product."""
-    user_id = get_jwt_identity()
-    data = request.get_json()
-    
-    if not data:
-        return jsonify({'success': False, 'error': 'No data provided'}), 400
-    
-    with engine.connect() as conn:
-        _ensure_batches_table(conn)
-        
-        me = conn.execute(text('select id, role, pharmacy_id from users where id = :id'), {'id': user_id}).mappings().first()
-        if not me or me['role'] not in ('manager','admin'):
-            return jsonify({'success': False, 'error': 'Forbidden'}), 403
-        
-        # Verify product belongs to pharmacy
-        product = conn.execute(text('select id, pharmacy_id from products where id = :id'), {'id': product_id}).mappings().first()
-        if not product or product['pharmacy_id'] != me['pharmacy_id']:
-            return jsonify({'success': False, 'error': 'Product not found'}), 404
-        
-        # Create batch
-        batch_number = data.get('batch_number', f'DEL-{int(time.time())}')
-        quantity = int(data.get('quantity', 0))
-        expiration_date = data.get('expiration_date')
-        delivery_date = data.get('delivery_date')
-        supplier_id = data.get('supplier_id')
-        cost_price = data.get('cost_price')
-        
-        if quantity <= 0:
-            return jsonify({'success': False, 'error': 'Quantity must be positive'}), 400
-        
-        # Insert batch
-        conn.execute(text('''
-            insert into inventory_batches (product_id, batch_number, quantity, expiration_date, delivery_date, supplier_id, cost_price)
-            values (:pid, :bn, :qty, :exp, :del, :sid, :cp)
-        '''), {
-            'pid': product_id,
-            'bn': batch_number,
-            'qty': quantity,
-            'exp': expiration_date,
-            'del': delivery_date,
-            'sid': supplier_id,
-            'cp': cost_price
-        })
-        
-        # Update inventory total (excluding expired products)
-        total = conn.execute(text('''
-            select coalesce(sum(quantity),0) 
-            from inventory_batches 
-            where product_id = :pid 
-            and (expiration_date is null or expiration_date > current_date)
-        '''), {'pid': product_id}).scalar() or 0
-        # Persist latest average cost into products.cost_price (simple average of deliveries)
-        avg_cost = conn.execute(text('''
-            select avg(cost_price)::numeric(12,2)
-            from inventory_batches
-            where product_id = :pid and cost_price is not null
-        '''), {'pid': product_id}).scalar()
-        if avg_cost is not None:
-            conn.execute(text('update products set cost_price = :avg where id = :pid'), {'avg': avg_cost, 'pid': product_id})
-
-        conn.execute(text('''
-            insert into inventory (product_id, current_stock) 
-            values (:pid, :total)
-            on conflict (product_id) do update set 
-                current_stock = :total,
-                last_updated = now()
-        '''), {'pid': product_id, 'total': total})
-        
-        conn.commit()
-        return jsonify({'success': True, 'message': 'Batch created'})
-@app.patch('/api/manager/batches/<int:batch_id>')
 @jwt_required()
 def update_batch(batch_id):
     """Update a batch (delivery)."""
