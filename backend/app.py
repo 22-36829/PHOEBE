@@ -26,32 +26,53 @@ except Exception as e:
     raise
 
 # Add a minimal root endpoint immediately to ensure app can respond
-@app.get('/')
-def root_minimal():
-    """Minimal root endpoint - always available"""
-    return jsonify({
-        'status': 'running',
-        'message': 'Phoebe Backend API is running',
-        'version': '1.0.0',
-        'timestamp': datetime.now().isoformat()
-    })
+sys.stdout.write("[INIT] Registering root endpoint...\n")
+sys.stdout.flush()
+try:
+    @app.get('/')
+    def root_minimal():
+        """Minimal root endpoint - always available"""
+        return jsonify({
+            'status': 'running',
+            'message': 'Phoebe Backend API is running',
+            'version': '1.0.0',
+            'timestamp': datetime.now().isoformat()
+        })
+    sys.stdout.write("[INIT] Root endpoint registered\n")
+    sys.stdout.flush()
+except Exception as e:
+    sys.stdout.write(f"[CRITICAL] Failed to register root endpoint: {e}\n")
+    import traceback
+    traceback.print_exc()
+    sys.stdout.flush()
+    raise
 
 # Now import other dependencies - wrap in try-except to prevent crashes
+sys.stdout.write("[INIT] Starting dependency imports...\n")
+sys.stdout.flush()
 try:
+    sys.stdout.write("[INIT] Importing CORS...\n")
+    sys.stdout.flush()
     from flask_cors import CORS
     CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False, expose_headers=["Authorization"], allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"])
-    print("[INFO] CORS enabled")
+    sys.stdout.write("[INFO] CORS enabled\n")
+    sys.stdout.flush()
 except Exception as e:
-    print(f"[WARNING] Could not configure CORS: {e}")
+    sys.stdout.write(f"[WARNING] Could not configure CORS: {e}\n")
+    sys.stdout.flush()
 
 try:
+    sys.stdout.write("[INIT] Importing SQLAlchemy...\n")
+    sys.stdout.flush()
     from sqlalchemy import create_engine, text
     from sqlalchemy import inspect
     from sqlalchemy.engine import Engine
     SQLALCHEMY_AVAILABLE = True
-    print("[INFO] SQLAlchemy imported successfully")
+    sys.stdout.write("[INFO] SQLAlchemy imported successfully\n")
+    sys.stdout.flush()
 except Exception as e:
-    print(f"[WARNING] Could not import SQLAlchemy: {e}")
+    sys.stdout.write(f"[WARNING] Could not import SQLAlchemy: {e}\n")
+    sys.stdout.flush()
     SQLALCHEMY_AVAILABLE = False
     Engine = None
 
@@ -90,16 +111,20 @@ except Exception as e:
 
 # Enable forecasting service with proper initialization - wrap in try-except to prevent import crashes
 try:
+    sys.stdout.write("[INIT] Importing forecasting dependencies...\n")
+    sys.stdout.flush()
     from forecasting_service import ForecastingService
     from statsmodels.tsa.statespace.sarimax import SARIMAX
     from sklearn.metrics import mean_absolute_error, mean_squared_error
     import numpy as np
     import pandas as pd
     FORECASTING_AVAILABLE = True
-    print("[INFO] Forecasting dependencies imported successfully")
+    sys.stdout.write("[INFO] Forecasting dependencies imported successfully\n")
+    sys.stdout.flush()
 except Exception as e:
-    print(f"[WARNING] Could not import forecasting dependencies: {e}")
-    print("[INFO] Forecasting features will be disabled")
+    sys.stdout.write(f"[WARNING] Could not import forecasting dependencies: {e}\n")
+    sys.stdout.write("[INFO] Forecasting features will be disabled\n")
+    sys.stdout.flush()
     FORECASTING_AVAILABLE = False
     ForecastingService = None
     SARIMAX = None
@@ -109,11 +134,14 @@ except Exception as e:
     pd = None
 
 # Get DATABASE_URL - don't crash if missing, app will handle it gracefully
+sys.stdout.write("[INIT] Checking DATABASE_URL...\n")
+sys.stdout.flush()
 DATABASE_URL = os.getenv('DATABASE_URL')
 if not DATABASE_URL:
-    print("[WARNING] DATABASE_URL environment variable is not set.")
-    print("[INFO] App will start but database operations will fail.")
-    print("[INFO] Please set DATABASE_URL in Render dashboard: Settings > Environment Variables")
+    sys.stdout.write("[WARNING] DATABASE_URL environment variable is not set.\n")
+    sys.stdout.write("[INFO] App will start but database operations will fail.\n")
+    sys.stdout.write("[INFO] Please set DATABASE_URL in Render dashboard: Settings > Environment Variables\n")
+    sys.stdout.flush()
     DATABASE_URL = None
 elif 'port' in DATABASE_URL.lower() and ':' not in DATABASE_URL.split('@')[1].split('/')[0]:
     print(f"[WARNING] Invalid DATABASE_URL format. Found placeholder text 'port'.")
@@ -127,8 +155,12 @@ elif DATABASE_URL == 'postgresql+psycopg2://user:password@host:port/database?ssl
     DATABASE_URL = None
 
 # Configure Flask app
+sys.stdout.write("[INIT] Configuring Flask app...\n")
+sys.stdout.flush()
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-secret')
 app.config['SECRET_KEY'] = os.getenv('APP_SECRET_KEY', 'dev-app-secret')
+sys.stdout.write("[INIT] Flask app configured\n")
+sys.stdout.flush()
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)  # 24 hours instead of 15 minutes
 DEBUG_MODE = os.getenv('FLASK_DEBUG', '1').lower() in ('1', 'true', 'yes')
 app.config['DEBUG'] = DEBUG_MODE
