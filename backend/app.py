@@ -1,16 +1,73 @@
 import os
+import sys
 import time
 import json
 from datetime import timedelta, datetime
 from collections import defaultdict
+
+# CRITICAL: Create Flask app FIRST, before any other imports that might fail
+# This ensures app object exists even if other components fail
 from flask import Flask, jsonify, request
-from flask_cors import CORS
-from sqlalchemy import create_engine, text
-from sqlalchemy import inspect
-from sqlalchemy.engine import Engine
-from dotenv import load_dotenv
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
-import bcrypt
+app = Flask(__name__)
+
+# Add a minimal root endpoint immediately to ensure app can respond
+@app.get('/')
+def root_minimal():
+    """Minimal root endpoint - always available"""
+    return jsonify({
+        'status': 'running',
+        'message': 'Phoebe Backend API is running',
+        'version': '1.0.0',
+        'timestamp': datetime.now().isoformat()
+    })
+
+# Now import other dependencies - wrap in try-except to prevent crashes
+try:
+    from flask_cors import CORS
+    CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False, expose_headers=["Authorization"], allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"])
+    print("[INFO] CORS enabled")
+except Exception as e:
+    print(f"[WARNING] Could not configure CORS: {e}")
+
+try:
+    from sqlalchemy import create_engine, text
+    from sqlalchemy import inspect
+    from sqlalchemy.engine import Engine
+    SQLALCHEMY_AVAILABLE = True
+    print("[INFO] SQLAlchemy imported successfully")
+except Exception as e:
+    print(f"[WARNING] Could not import SQLAlchemy: {e}")
+    SQLALCHEMY_AVAILABLE = False
+    Engine = None
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    print("[INFO] Environment variables loaded")
+except Exception as e:
+    print(f"[WARNING] Could not load .env: {e}")
+
+try:
+    from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+    JWT_AVAILABLE = True
+    print("[INFO] Flask-JWT-Extended imported successfully")
+except Exception as e:
+    print(f"[WARNING] Could not import Flask-JWT-Extended: {e}")
+    JWT_AVAILABLE = False
+    JWTManager = None
+    create_access_token = None
+    jwt_required = None
+    get_jwt_identity = None
+
+try:
+    import bcrypt
+    BCRYPT_AVAILABLE = True
+    print("[INFO] bcrypt imported successfully")
+except Exception as e:
+    print(f"[WARNING] Could not import bcrypt: {e}")
+    BCRYPT_AVAILABLE = False
+    bcrypt = None
+
 # Enable forecasting service with proper initialization - wrap in try-except to prevent import crashes
 try:
     from forecasting_service import ForecastingService
@@ -19,6 +76,7 @@ try:
     import numpy as np
     import pandas as pd
     FORECASTING_AVAILABLE = True
+    print("[INFO] Forecasting dependencies imported successfully")
 except Exception as e:
     print(f"[WARNING] Could not import forecasting dependencies: {e}")
     print("[INFO] Forecasting features will be disabled")
@@ -29,8 +87,6 @@ except Exception as e:
     mean_squared_error = None
     np = None
     pd = None
-
-load_dotenv()
 
 # Get DATABASE_URL - don't crash if missing, app will handle it gracefully
 DATABASE_URL = os.getenv('DATABASE_URL')
@@ -50,36 +106,62 @@ elif DATABASE_URL == 'postgresql+psycopg2://user:password@host:port/database?ssl
     print("[INFO] Please set a real DATABASE_URL in Render dashboard.")
     DATABASE_URL = None
 
-app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False, expose_headers=["Authorization"], allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"]) 
+# Configure Flask app
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-secret')
 app.config['SECRET_KEY'] = os.getenv('APP_SECRET_KEY', 'dev-app-secret')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)  # 24 hours instead of 15 minutes
 DEBUG_MODE = os.getenv('FLASK_DEBUG', '1').lower() in ('1', 'true', 'yes')
 app.config['DEBUG'] = DEBUG_MODE
-jwt = JWTManager(app)
 
-# JSON auth/permission error handlers
-@jwt.unauthorized_loader
-def _jwt_unauthorized(err):
-	return jsonify({'success': False, 'error': 'Missing or invalid authorization header'}), 401
+# Initialize JWT only if available
+jwt = None
+if JWT_AVAILABLE:
+    try:
+        jwt = JWTManager(app)
+        print("[INFO] JWT initialized successfully")
+        
+        # JSON auth/permission error handlers
+        @jwt.unauthorized_loader
+        def _jwt_unauthorized(err):
+            return jsonify({'success': False, 'error': 'Missing or invalid authorization header'}), 401
 
-@jwt.invalid_token_loader
-def _jwt_invalid(err):
-	return jsonify({'success': False, 'error': 'Invalid token'}), 401
+        @jwt.invalid_token_loader
+        def _jwt_invalid(err):
+            return jsonify({'success': False, 'error': 'Invalid token'}), 401
 
-@jwt.expired_token_loader
-def _jwt_expired(jwt_header, jwt_payload):
-	return jsonify({'success': False, 'error': 'Token expired'}), 401
+        @jwt.expired_token_loader
+        def _jwt_expired(jwt_header, jwt_payload):
+            return jsonify({'success': False, 'error': 'Token expired'}), 401
+    except Exception as e:
+        print(f"[WARNING] Could not initialize JWT: {e}")
+        jwt = None
 
 @app.errorhandler(403)
 def _forbidden(e):
 	return jsonify({'success': False, 'error': 'Forbidden'}), 403
 
+# Get DATABASE_URL - don't crash if missing, app will handle it gracefully
+DATABASE_URL = os.getenv('DATABASE_URL')
+if not DATABASE_URL:
+    print("[WARNING] DATABASE_URL environment variable is not set.")
+    print("[INFO] App will start but database operations will fail.")
+    print("[INFO] Please set DATABASE_URL in Render dashboard: Settings → Environment Variables")
+    DATABASE_URL = None
+elif 'port' in DATABASE_URL.lower() and ':' not in DATABASE_URL.split('@')[1].split('/')[0]:
+    print(f"[WARNING] Invalid DATABASE_URL format. Found placeholder text 'port'.")
+    print("[INFO] App will start but database operations will fail.")
+    print("[INFO] Please check your DATABASE_URL in Render dashboard.")
+    DATABASE_URL = None
+elif DATABASE_URL == 'postgresql+psycopg2://user:password@host:port/database?sslmode=require':
+    print("[WARNING] DATABASE_URL contains placeholder values.")
+    print("[INFO] App will start but database operations will fail.")
+    print("[INFO] Please set a real DATABASE_URL in Render dashboard.")
+    DATABASE_URL = None
+
 # Create engine lazily - don't validate connection at import time
 # This allows app to start even if database is temporarily unavailable
 engine: Engine = None
-if DATABASE_URL:
+if SQLALCHEMY_AVAILABLE and DATABASE_URL:
     try:
         engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args={"connect_timeout": 10})
         print("[INFO] Database engine created successfully")
@@ -88,7 +170,10 @@ if DATABASE_URL:
         print("[INFO] Will retry on first database operation")
         engine = None
 else:
-    print("[WARNING] DATABASE_URL not set, engine will not be created")
+    if not SQLALCHEMY_AVAILABLE:
+        print("[WARNING] SQLAlchemy not available, engine will not be created")
+    else:
+        print("[WARNING] DATABASE_URL not set, engine will not be created")
 
 # Initialize forecasting service lazily - don't create at import time
 # This prevents import-time database connections
@@ -5563,15 +5648,7 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
-# Add a simple root endpoint to verify app is running
-@app.get('/')
-def root():
-    """Root endpoint to verify app is running"""
-    return jsonify({
-        'status': 'running',
-        'message': 'Phoebe Backend API is running',
-        'version': '1.0.0'
-    })
+# Root endpoint already defined at top of file
 
 def _in_reloader_process() -> bool:
 	"""Return True when running inside the active Flask reloader process."""
@@ -6256,19 +6333,18 @@ def analytics_abc_ved():
 
 # Print startup message when module is imported (for debugging)
 # This MUST run to verify the app can import successfully
-try:
-    print("[INFO] ========================================")
-    print("[INFO] Phoebe Backend app module loaded")
-    print(f"[INFO] Flask app object: {app}")
-    print(f"[INFO] DATABASE_URL set: {DATABASE_URL is not None}")
-    print(f"[INFO] Engine created: {engine is not None}")
-    print(f"[INFO] Forecasting available: {FORECASTING_AVAILABLE}")
-    print("[INFO] ========================================")
-    print("[INFO] App should be ready to bind to port")
-except Exception as e:
-    print(f"[CRITICAL] Error during startup logging: {e}")
-    import traceback
-    traceback.print_exc()
+print("[INFO] ========================================")
+print("[INFO] Phoebe Backend app module loaded")
+print(f"[INFO] Flask app object: {app}")
+print(f"[INFO] DATABASE_URL set: {DATABASE_URL is not None}")
+print(f"[INFO] Engine created: {engine is not None}")
+print(f"[INFO] Forecasting available: {FORECASTING_AVAILABLE}")
+print(f"[INFO] SQLAlchemy available: {SQLALCHEMY_AVAILABLE}")
+print(f"[INFO] JWT available: {JWT_AVAILABLE}")
+print("[INFO] ========================================")
+print("[INFO] App should be ready to bind to port")
+print("[INFO] Minimal root endpoint available at /")
+print("[INFO] Health check available at /api/health")
 
 if __name__ == '__main__':
 	if not DEBUG_MODE or _in_reloader_process():
