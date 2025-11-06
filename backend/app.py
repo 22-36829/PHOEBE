@@ -3960,7 +3960,10 @@ def train_forecasting_model():
             pharmacy_id = user_row['pharmacy_id']
 
         # Use enhanced forecasting service for reliable accuracy
-        result, message = forecasting_service.train_model(
+        fs = get_forecasting_service()
+        if not fs:
+            return jsonify({'success': False, 'error': 'Forecasting service not available'}), 503
+        result, message = fs.train_model(
             pharmacy_id,
             int(target_id),
             target_name,
@@ -4012,7 +4015,11 @@ def get_forecasts():
                 return jsonify({'success': False, 'error': 'User not found'}), 404
             pharmacy_id = user_row['pharmacy_id']
 
-        history_df = forecasting_service.get_historical_data(
+        fs = get_forecasting_service()
+        if not fs:
+            return jsonify({'success': False, 'error': 'Forecasting service not available'}), 503
+        
+        history_df = fs.get_historical_data(
             pharmacy_id,
             product_id=int(target_id) if model_type == 'product' else None,
             category_id=int(target_id) if model_type == 'category' else None,
@@ -4022,24 +4029,24 @@ def get_forecasts():
         if history_df is None or history_df.empty or len(history_df) < 7:
             return jsonify({'success': False, 'error': 'Insufficient historical data'}), 400
 
-        series = forecasting_service.prepare_series(history_df)
+        series = fs.prepare_series(history_df)
         last_observed_date = history_df.index.max().date()
 
-        model, model_meta = forecasting_service.load_model(
+        model, model_meta = fs.load_model(
             model_type,
             pharmacy_id,
             str(target_id),
         )
 
         if model is None:
-            result, message = forecasting_service.train_model(
+            result, message = fs.train_model(
                 pharmacy_id,
                 int(target_id),
                 target_name,
                 model_type,
             )
             if result is None:
-                fallback = forecasting_service.build_naive_forecast(
+                fallback = fs.build_naive_forecast(
                     series,
                     forecast_days,
                     last_observed_date,
@@ -4048,19 +4055,19 @@ def get_forecasts():
                 fallback['message'] = 'Showing baseline projection (model unavailable)'
                 fallback['accuracy'] = 0
                 return jsonify(fallback)
-            model, model_meta = forecasting_service.load_model(
+            model, model_meta = fs.load_model(
                 model_type,
                 pharmacy_id,
                 str(target_id),
             )
 
-        forecast_payload = forecasting_service.generate_forecast(
+        forecast_payload = fs.generate_forecast(
             model,
             steps=forecast_days,
             last_date=last_observed_date,
         )
 
-        accuracy_row = forecasting_service.get_model_accuracy(
+        accuracy_row = fs.get_model_accuracy(
             pharmacy_id,
             model_type,
             str(target_id),
@@ -6248,12 +6255,20 @@ def analytics_abc_ved():
 
 
 # Print startup message when module is imported (for debugging)
-print("[INFO] ========================================")
-print("[INFO] Phoebe Backend app module loaded")
-print(f"[INFO] Flask app object: {app}")
-print(f"[INFO] DATABASE_URL set: {DATABASE_URL is not None}")
-print(f"[INFO] Engine created: {engine is not None}")
-print("[INFO] ========================================")
+# This MUST run to verify the app can import successfully
+try:
+    print("[INFO] ========================================")
+    print("[INFO] Phoebe Backend app module loaded")
+    print(f"[INFO] Flask app object: {app}")
+    print(f"[INFO] DATABASE_URL set: {DATABASE_URL is not None}")
+    print(f"[INFO] Engine created: {engine is not None}")
+    print(f"[INFO] Forecasting available: {FORECASTING_AVAILABLE}")
+    print("[INFO] ========================================")
+    print("[INFO] App should be ready to bind to port")
+except Exception as e:
+    print(f"[CRITICAL] Error during startup logging: {e}")
+    import traceback
+    traceback.print_exc()
 
 if __name__ == '__main__':
 	if not DEBUG_MODE or _in_reloader_process():
