@@ -5,7 +5,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminLayout from './layouts/AdminLayout';
 import ManagerLayout from './layouts/ManagerLayout';
-import { AdminDashboard, Placeholder as AdminPlaceholder, SubscriptionsPage, AccountsPage, AnnouncementsPage, ChatPage } from './pages/admin';
+import { AdminDashboard, SubscriptionsPage, AccountsPage, AnnouncementsPage, ChatPage } from './pages/admin';
 import ManagerDashboard from './pages/manager/ManagerDashboard';
 import ManagerProfile from './pages/manager/ManagerProfile';
 import StaffAccounts from './pages/manager/StaffAccounts';

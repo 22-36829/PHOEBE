@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Building, Calendar, DollarSign, TrendingUp, CheckCircle2, Clock, XCircle, Eye, MoreVertical, Package, Database, Loader2, BarChart3, Plus, X, AlertCircle, Edit2, Save, Trash2, Power, Play, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CreditCard, Building, DollarSign, TrendingUp, CheckCircle2, Clock, XCircle, Eye, Package, Database, Loader2, BarChart3, Plus, X, AlertCircle, Edit2, Save, Trash2, Power, Play, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AdminAPI } from '../../services/api';
 
@@ -78,6 +78,7 @@ const SubscriptionsPage = () => {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, filters]);
 
   const loadData = async () => {
@@ -591,13 +592,13 @@ const SubscriptionsPage = () => {
     setStorageError('');
   };
 
-  const formatBytes = (bytes) => {
-    if (!bytes || bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+  // const formatBytes = (bytes) => {
+  //   if (!bytes || bytes === 0) return '0 B';
+  //   const k = 1024;
+  //   const sizes = ['B', 'KB', 'MB', 'GB'];
+  //   const i = Math.floor(Math.log(bytes) / Math.log(k));
+  //   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  // };
 
   // Calculate stats
   const totalCount = subscriptions.length;

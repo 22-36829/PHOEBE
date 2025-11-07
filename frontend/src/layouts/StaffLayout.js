@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import {
   BarChart3,
   Settings,
-  Package,
   ShoppingCart,
   Bot,
   Leaf,

@@ -4,7 +4,6 @@ import {
   BarChart3, 
   Users, 
   Package, 
-  FileText, 
   TrendingUp, 
   Leaf, 
   Bot, 
@@ -13,7 +12,6 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronDown,
   Sun,
   Moon,
   ChevronLeft,
@@ -24,7 +22,6 @@ import { useAuth } from '../contexts/AuthContext';
 
 const ManagerLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();

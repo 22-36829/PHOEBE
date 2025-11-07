@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Users, CreditCard, MessageSquare, TrendingUp, CheckCircle2, Clock, AlertCircle, Bell, Package, DollarSign, Loader2, ArrowRight } from 'lucide-react';
+import { Building2, Users, CreditCard, MessageSquare, TrendingUp, AlertCircle, Bell, Loader2, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AdminAPI, SupportAPI, AnnouncementsAPI } from '../../services/api';
 
@@ -29,6 +29,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const loadData = async () => {
@@ -39,7 +40,7 @@ const AdminDashboard = () => {
       setError('');
       
       // Load all data in parallel
-      const [pharmaciesRes, usersRes, subscriptionsRes, ticketsRes, ticketsStatsRes, announcementsRes] = await Promise.all([
+      const [pharmaciesRes, usersRes, subscriptionsRes, ticketsRes, , announcementsRes] = await Promise.all([
         AdminAPI.listPharmacies(token),
         AdminAPI.listUsers(token),
         AdminAPI.listSubscriptions(token),
@@ -54,7 +55,7 @@ const AdminDashboard = () => {
       
       // Calculate user stats
       const users = usersRes.success ? usersRes.users || [] : [];
-      const activeUsers = users.filter(u => u.is_active).length;
+      // const activeUsers = users.filter(u => u.is_active).length;
       
       // Calculate subscription stats
       const subscriptions = subscriptionsRes.success ? subscriptionsRes.subscriptions || [] : [];

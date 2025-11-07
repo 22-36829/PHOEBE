@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { MessageSquare, Search, Filter, AlertCircle, Bug, Lightbulb, HelpCircle, Clock, CheckCircle, XCircle, Send, User, Tag, ArrowUpDown, CheckCircle2 } from 'lucide-react';
+import { MessageSquare, Search, AlertCircle, Bug, Lightbulb, HelpCircle, Clock, CheckCircle, XCircle, Send } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { SupportAPI, ManagerAPI } from '../../services/api';
 
@@ -22,6 +22,7 @@ const ChatPage = () => {
     loadTickets();
     loadStats();
     loadAdmins();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, statusFilter, typeFilter, priorityFilter]);
 
   const loadStats = async () => {

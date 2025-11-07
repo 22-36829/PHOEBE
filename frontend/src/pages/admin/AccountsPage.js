@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, Building2, Mail, User as UserIcon, Shield, UserCheck, Search, Plus, X, CheckCircle2, XCircle, Calendar, Filter, Trash2, Power, PowerOff, AlertCircle } from 'lucide-react';
+import { Users, Building2, Mail, User as UserIcon, Shield, UserCheck, Search, Plus, X, Calendar, Filter, Power, PowerOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AdminAPI } from '../../services/api';
 
@@ -45,6 +45,7 @@ const AccountsPage = () => {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const loadData = async () => {

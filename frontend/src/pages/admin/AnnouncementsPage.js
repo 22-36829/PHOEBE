@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Edit2, Pin, PinOff, X, Check, AlertCircle, Info, AlertTriangle, Bell, Calendar, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Edit2, Pin, PinOff, X, Check, AlertCircle, Info, AlertTriangle, Bell, Calendar, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AnnouncementsAPI } from '../../services/api';
 
